@@ -10,17 +10,22 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d  # noqa: F401
 from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    accuracy_score,
+)
 
 # Load Iris dataset
 iris = load_iris(as_frame=True)
 
-# Tampilkan keys data untuk informasi
-print("Data keys:", iris.keys())
-
 # Tambahkan kolom target nama kelas ke dataframe
 iris.frame["target"] = iris.target_names[iris.target]
 
-# Visualisasi pairplot untuk semua fitur
+# Pairplot untuk eksplorasi awal
 sns.pairplot(iris.frame, hue="target")
 plt.suptitle("Pairplot fitur dataset Iris", y=1.02)
 plt.show()
@@ -46,11 +51,6 @@ ax.set(
     ylabel="2nd Principal Component",
     zlabel="3rd Principal Component",
 )
-ax.xaxis.set_ticklabels([])
-ax.yaxis.set_ticklabels([])
-ax.zaxis.set_ticklabels([])
-
-# Tambah legend kelas
 legend1 = ax.legend(
     scatter.legend_elements()[0],
     iris.target_names.tolist(),
@@ -58,12 +58,27 @@ legend1 = ax.legend(
     title="Kelas",
 )
 ax.add_artist(legend1)
-
 plt.show()
 
-# Catatan singkat
-print("""
-PCA berhasil mengurangi dimensi dari 4 fitur ke 3 komponen utama.
-Setosa dapat dipisahkan dengan jelas,
-sementara Versicolor dan Virginica masih sedikit tumpang tindih.
-""")
+# --------- MODEL SUPERVISED LEARNING ---------
+# Split data: 80% train, 20% test
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42
+)
+
+# Gunakan model K-Nearest Neighbors
+model = KNeighborsClassifier(n_neighbors=3)
+model.fit(X_train, y_train)
+
+# Prediksi
+y_pred = model.predict(X_test)
+
+# Evaluasi Model
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred, target_names=iris.target_names))
+print("\nAkurasi:", accuracy_score(y_test, y_pred))
+
+# Visualisasi Confusion Matrix
+ConfusionMatrixDisplay.from_estimator(model, X_test, y_test, display_labels=iris.target_names)
+plt.title("Confusion Matrix - KNN (k=3)")
+plt.show()
